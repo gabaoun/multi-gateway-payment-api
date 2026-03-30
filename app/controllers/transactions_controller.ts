@@ -16,7 +16,7 @@ export default class TransactionsController {
           email: vine.string().email(),
         }),
         payment: vine.object({
-          cardNumber: vine.string().minLength(16).maxLength(16),
+          cardNumber: vine.string().minLength(13).maxLength(19),
           cvv: vine.string().minLength(3).maxLength(4),
         }),
         products: vine

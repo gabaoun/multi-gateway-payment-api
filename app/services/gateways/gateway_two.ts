@@ -29,6 +29,7 @@ export class GatewayTwo implements PaymentGateway {
             'Gateway-Auth-Token': this.token.release(),
             'Gateway-Auth-Secret': this.secret.release(),
           },
+          timeout: 10000,
         }
       )
 
@@ -54,6 +55,7 @@ export class GatewayTwo implements PaymentGateway {
             'Gateway-Auth-Token': this.token.release(),
             'Gateway-Auth-Secret': this.secret.release(),
           },
+          timeout: 10000,
         }
       )
       return { success: true }

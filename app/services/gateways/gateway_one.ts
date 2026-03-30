@@ -15,10 +15,14 @@ export class GatewayOne implements PaymentGateway {
 
   private async getAuthToken() {
     try {
-      const { data } = await axios.post(`${this.baseUrl}/login`, {
-        email: this.email,
-        token: this.token.release(),
-      })
+      const { data } = await axios.post(
+        `${this.baseUrl}/login`,
+        {
+          email: this.email,
+          token: this.token.release(),
+        },
+        { timeout: 10000 }
+      )
       return data.token
     } catch (e) {
       throw new Error('Gateway 1: Falha na autenticação')
@@ -39,6 +43,7 @@ export class GatewayOne implements PaymentGateway {
         },
         {
           headers: { Authorization: `Bearer ${token}` },
+          timeout: 10000,
         }
       )
 
@@ -64,6 +69,7 @@ export class GatewayOne implements PaymentGateway {
           headers: {
             Authorization: `Bearer ${token}`,
           },
+          timeout: 10000,
         }
       )
       return { success: true }

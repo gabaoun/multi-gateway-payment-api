@@ -1,4 +1,5 @@
 import { inject } from '@adonisjs/core'
+import db from '@adonisjs/lucid/services/db'
 import Gateway from '#models/gateway'
 import Transaction from '#models/transaction'
 import Client from '#models/client'
@@ -22,40 +23,58 @@ export class PaymentService {
     payment: { cardNumber: string; cvv: string; products: { id: number; quantity: number }[] }
   ) {
     const amount = await this.calculateTotal(payment.products)
-    const client = await this.getOrCreateClient(customer)
     const activeGateways = await this.getActiveGatewaysSortedByPriority()
 
     if (!activeGateways.length) {
       throw new Error('No payment gateways configured or active')
     }
 
-    const transaction = await this.createPendingTransaction(client.id, amount, payment.cardNumber)
-    await this.attachProductsToTransaction(transaction, payment.products)
+    // Use transaction for database operations
+    const transaction = await db.transaction(async (trx) => {
+      const client = await this.getOrCreateClient(customer, trx)
+      const transactionModel = await this.createPendingTransaction(
+        client.id,
+        amount,
+        payment.cardNumber,
+        trx
+      )
+      await this.attachProductsToTransaction(transactionModel, payment.products, trx)
 
-    const paymentRequest = this.buildPaymentRequest(client, payment, amount)
+      const paymentRequest = this.buildPaymentRequest(client, payment, amount)
 
-    let success = false
-    let lastError = 'Unknown error'
+      let success = false
+      let lastError = 'Unknown error'
 
-    for (const gatewayModel of activeGateways) {
-      const instance = this.gatewayInstances[gatewayModel.name]
-      if (!instance) continue
+      for (const gatewayModel of activeGateways) {
+        const instance = this.gatewayInstances[gatewayModel.name]
+        if (!instance) continue
 
-      const result = await instance.pay(paymentRequest)
+        try {
+          const result = await instance.pay(paymentRequest)
 
-      if (result.success) {
-        await this.finalizeTransaction(transaction, gatewayModel.id, result.externalId!)
-        success = true
-        break
+          if (result.success) {
+            await this.finalizeTransaction(
+              transactionModel,
+              gatewayModel.id,
+              result.externalId!,
+              trx
+            )
+            success = true
+            break
+          }
+          lastError = result.error || 'Payment failed'
+        } catch (e) {
+          lastError = e.message
+        }
       }
 
-      lastError = result.error || 'Payment failed'
-    }
+      if (!success) {
+        await this.markTransactionAsFailed(transactionModel, trx)
+        throw new Error(`Payment processing failed: ${lastError}`)
+      }
 
-    if (!success) {
-      await this.markTransactionAsFailed(transaction)
-      throw new Error(`Payment processing failed: ${lastError}`)
-    }
+      return transactionModel
+    })
 
     return transaction
   }
@@ -91,38 +110,56 @@ export class PaymentService {
       throw new Error('Gateway implementation not found for refund')
     }
 
-    const result = await instance.refund(transaction.externalId!)
+    return await db.transaction(async (trx) => {
+      transaction.useTransaction(trx)
+      const result = await instance.refund(transaction.externalId!)
 
-    if (result.success) {
-      transaction.status = 'REFUNDED'
-      await transaction.save()
-      return true
-    }
+      if (result.success) {
+        transaction.status = 'REFUNDED'
+        await transaction.save()
+        return true
+      }
 
-    throw new Error(`Refund failed: ${result.error}`)
+      throw new Error(`Refund failed: ${result.error}`)
+    })
   }
 
-  private async getOrCreateClient(customer: { name: string; email: string }) {
-    return await Client.firstOrCreate({ email: customer.email }, { name: customer.name })
+  private async getOrCreateClient(customer: { name: string; email: string }, trx?: any) {
+    return await Client.firstOrCreate(
+      { email: customer.email },
+      { name: customer.name },
+      { client: trx }
+    )
   }
 
   private async getActiveGatewaysSortedByPriority() {
     return await Gateway.query().where('isActive', true).orderBy('priority', 'asc')
   }
 
-  private async createPendingTransaction(clientId: number, amount: number, cardNumber: string) {
-    return await Transaction.create({
+  private async createPendingTransaction(
+    clientId: number,
+    amount: number,
+    cardNumber: string,
+    trx?: any
+  ) {
+    const transaction = new Transaction()
+    transaction.fill({
       clientId,
       amount,
       status: 'PENDING',
       cardLastNumbers: cardNumber.slice(-4),
     })
+    if (trx) transaction.useTransaction(trx)
+    await transaction.save()
+    return transaction
   }
 
   private async attachProductsToTransaction(
     transaction: Transaction,
-    products: { id: number; quantity: number }[]
+    products: { id: number; quantity: number }[],
+    trx?: any
   ) {
+    if (trx) transaction.useTransaction(trx)
     for (const p of products) {
       await transaction.related('products').attach({ [p.id]: { quantity: p.quantity } })
     }
@@ -145,8 +182,10 @@ export class PaymentService {
   private async finalizeTransaction(
     transaction: Transaction,
     gatewayId: number,
-    externalId: string
+    externalId: string,
+    trx?: any
   ) {
+    if (trx) transaction.useTransaction(trx)
     transaction.merge({
       status: 'PAID',
       gatewayId,
@@ -155,7 +194,8 @@ export class PaymentService {
     await transaction.save()
   }
 
-  private async markTransactionAsFailed(transaction: Transaction) {
+  private async markTransactionAsFailed(transaction: Transaction, trx?: any) {
+    if (trx) transaction.useTransaction(trx)
     transaction.status = 'FAILED'
     await transaction.save()
   }

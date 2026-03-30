@@ -12,7 +12,7 @@ export default class UsersController {
     const validator = vine.compile(
       vine.object({
         email: vine.string().email().unique({ table: 'users', column: 'email' }),
-        password: vine.string().minLength(6),
+        password: vine.string().minLength(8),
         role: vine.enum(['ADMIN', 'MANAGER', 'FINANCE', 'USER']),
       })
     )
@@ -44,7 +44,7 @@ export default class UsersController {
             },
           })
           .optional(),
-        password: vine.string().minLength(6).optional(),
+        password: vine.string().minLength(8).optional(),
         role: vine.enum(['ADMIN', 'MANAGER', 'FINANCE', 'USER']).optional(),
       })
     )
