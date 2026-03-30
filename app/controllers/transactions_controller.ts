@@ -1,11 +1,13 @@
 import { type HttpContext } from '@adonisjs/core/http'
+import { inject } from '@adonisjs/core'
 import Transaction from '#models/transaction'
 import Product from '#models/product'
 import { PaymentService } from '#services/payment_service'
 import vine from '@vinejs/vine'
 
+@inject()
 export default class TransactionsController {
-  private paymentService = new PaymentService()
+  constructor(private paymentService: PaymentService) {}
 
   public async purchase({ request, response }: HttpContext) {
     const schema = vine.compile(
@@ -31,21 +33,11 @@ export default class TransactionsController {
 
     const payload = await request.validateUsing(schema)
 
-    const items = await Promise.all(
-      payload.products.map(async (p) => {
-        const product = await Product.findOrFail(p.id)
-        return { id: product.id, quantity: p.quantity, price: product.amount }
-      })
-    )
-
-    const total = items.reduce((acc, item) => acc + item.price * item.quantity, 0)
-
     try {
-      const transaction = await this.paymentService.processPayment(
-        payload.client,
-        { ...payload.payment, products: items },
-        total
-      )
+      const transaction = await this.paymentService.processPayment(payload.client, {
+        ...payload.payment,
+        products: payload.products,
+      })
 
       return response.ok(transaction)
     } catch (e) {
