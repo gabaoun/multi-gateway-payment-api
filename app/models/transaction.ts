@@ -15,7 +15,7 @@ export default class Transaction extends BaseModel {
   @column({ columnName: 'gateway' })
   declare gatewayId: number | null
 
-  @column()
+  @column({ columnName: 'external_id' })
   declare externalId: string | null
 
   @column()
@@ -24,7 +24,7 @@ export default class Transaction extends BaseModel {
   @column()
   declare amount: number
 
-  @column()
+  @column({ columnName: 'card_last_numbers' })
   declare cardLastNumbers: string | null
 
   @belongsTo(() => Client)
@@ -35,6 +35,10 @@ export default class Transaction extends BaseModel {
 
   @manyToMany(() => Product, {
     pivotTable: 'transaction_products',
+    localKey: 'id',
+    pivotForeignKey: 'transaction_id',
+    relatedKey: 'id',
+    pivotRelatedForeignKey: 'product_id',
     pivotColumns: ['quantity'],
     pivotTimestamps: true,
   })

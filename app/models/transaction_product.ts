@@ -5,10 +5,10 @@ export default class TransactionProduct extends BaseModel {
   @column({ isPrimary: true })
   declare id: number
 
-  @column()
+  @column({ columnName: 'transaction_id' })
   declare transactionId: number
 
-  @column()
+  @column({ columnName: 'product_id' })
   declare productId: number
 
   @column()

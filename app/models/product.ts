@@ -15,7 +15,12 @@ export default class Product extends BaseModel {
 
   @manyToMany(() => Transaction, {
     pivotTable: 'transaction_products',
+    localKey: 'id',
+    pivotForeignKey: 'product_id',
+    relatedKey: 'id',
+    pivotRelatedForeignKey: 'transaction_id',
     pivotColumns: ['quantity'],
+    pivotTimestamps: true,
   })
   declare transactions: ManyToMany<typeof Transaction>
 
