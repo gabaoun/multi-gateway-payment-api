@@ -8,7 +8,7 @@ export default class Gateway extends BaseModel {
   @column()
   declare name: string
 
-  @column()
+  @column({ columnName: 'is_active' })
   declare isActive: boolean
 
   @column()

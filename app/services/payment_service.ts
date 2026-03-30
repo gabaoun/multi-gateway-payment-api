@@ -87,7 +87,7 @@ export class PaymentService {
     }
 
     const instance = this.gatewayInstances[transaction.gateway?.name || '']
-    if (!instance) {
+    if (!instance || !transaction.gateway) {
       throw new Error('Gateway implementation not found for refund')
     }
 
