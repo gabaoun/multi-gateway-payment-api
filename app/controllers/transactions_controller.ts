@@ -1,7 +1,6 @@
 import { type HttpContext } from '@adonisjs/core/http'
 import { inject } from '@adonisjs/core'
 import Transaction from '#models/transaction'
-import Product from '#models/product'
 import { PaymentService } from '#services/payment_service'
 import vine from '@vinejs/vine'
 
