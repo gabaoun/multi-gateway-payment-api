@@ -1,123 +1,112 @@
-# BeTalent - Sistema de Pagamentos Multi-Gateway (Nível 3)
+# Multi-Gateway Payment API
 
-Este repositório contém a implementação do Teste Prático para Desenvolvedor Back-end na BeTalent. A aplicação consiste em uma API RESTful para gerenciamento de pagamentos com suporte a múltiplos gateways e fallback automático.
-
----
-
-## 🏆 Nível de Implementação: 3 (Pleno)
-
-Este projeto foi desenvolvido para atender aos critérios do **Nível 3**, incluindo:
-
-- **Cálculo de Compra no Back-end:** O valor total é calculado com base nos produtos e quantidades, consultando preços diretamente no banco de dados.
-- **Multi-Gateways com Autenticação:** Integração completa com dois gateways distintos, cada um com seu método de autenticação (Bearer Token e Headers específicos).
-- **Fallback Inteligente:** Se o gateway prioritário falhar (ex: erro de CVV no mock), o sistema roteia a cobrança para o próximo gateway disponível sem interromper a experiência do usuário.
-- **RBAC (Role Based Access Control):** Controle de acesso rígido para perfis ADMIN, MANAGER, FINANCE e USER.
-- **TDD (Test Driven Development):** Suíte de testes funcionais cobrindo fluxos de sucesso, falha e fallback.
-- **Dockerização Total:** Infraestrutura completa via Docker Compose, incluindo banco de dados MySQL e os mocks dos gateways.
+A robust and resilient RESTful API for payment management, featuring multi-gateway support and automatic fallback logic. This project demonstrates high-level software engineering practices using AdonisJS 6.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🚀 Key Features
 
-- **Framework:** AdonisJS 6 (Node.js)
-- **Linguagem:** TypeScript
-- **Banco de Dados:** MySQL 8.0 (Lucid ORM)
-- **Validação:** VineJS
-- **Testes:** Japa
-- **Infraestrutura:** Docker & Docker Compose
+- **Dynamic Purchase Calculation:** Total amounts are calculated on the backend, fetching real-time product prices from the database.
+- **Multi-Gateway Integration:** Seamless integration with multiple payment gateways, each with specific authentication methods (Bearer Token, Custom Headers).
+- **Smart Fallback System:** If the primary gateway fails (e.g., CVV errors, timeout), the system automatically routes the charge to the next available gateway, ensuring a smooth user experience.
+- **Role-Based Access Control (RBAC):** Strict access control for ADMIN, MANAGER, FINANCE, and USER profiles.
+- **TDD (Test-Driven Development):** Comprehensive functional test suite covering success, failure, and fallback flows.
+- **Full Dockerization:** Complete infrastructure via Docker Compose, including MySQL database and gateway mocks.
 
 ---
 
-## 🚀 Como Iniciar o Projeto
+## 🛠️ Tech Stack
 
-### 1. Clonar e Configurar
+- **Framework:** [AdonisJS 6](https://adonisjs.com/) (Node.js)
+- **Language:** TypeScript
+- **Database:** MySQL 8.0 (Lucid ORM)
+- **Validation:** VineJS
+- **Testing:** Japa
+- **Infrastructure:** Docker & Docker Compose
+
+---
+
+## ⚙️ Architecture & Design Patterns
+
+- **Strategy Pattern:** Gateway integrations are decoupled through a common interface. Adding a new gateway only requires creating a new strategy class, keeping the `PaymentService` clean and maintainable.
+- **Service Layer:** All business logic for payment orchestration and fallback resides in dedicated services, following the Single Responsibility Principle.
+- **Automatic Fallback:** Failure logic is implemented to handle instabilities. If Gateway 1 returns a specific failure (like CVV mismatch in mock), the system transparently attempts Gateway 2.
+- **Database Schema:** Optimized structure with pivot tables (`transaction_products`) for multi-item purchases.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Setup
 
 ```bash
-git clone <URL_DO_REPOSITORIO>
+git clone <YOUR_REPOSITORY_URL>
 cd multi-gateway-payment-api
 cp .env.example .env
 ```
 
-### 2. Subir Infraestrutura (Docker)
+### 2. Infrastructure (Docker)
 
-Este comando iniciará a API, o banco MySQL e os mocks dos gateways:
+Start the API, MySQL database, and gateway mocks:
 
 ```bash
 docker compose up -d --build
 ```
 
-### 3. Preparar o Banco de Dados
+### 3. Database Preparation
 
-Execute as migrações e popule o banco com os dados iniciais (usuários, produtos e gateways):
+Run migrations and seed initial data:
 
 ```bash
-docker exec -it betalent_app node ace migration:run --force
-docker exec -it betalent_app node ace db:seed
+docker exec -it payment_app node ace migration:run --force
+docker exec -it payment_app node ace db:seed
 ```
 
 ---
 
-## 🧪 Testes Automatizados (TDD)
+## 🧪 Testing
 
-Para validar a integridade do sistema e a lógica de fallback:
+To validate system integrity and fallback logic:
 
 ```bash
-docker exec -it betalent_app node ace test
+docker exec -it payment_app node ace test
 ```
 
 ---
 
-## 👥 Perfis de Acesso (Seeds)
+## 👥 Access Profiles (Seeds)
 
-| Email                   | Senha      | Role        | Permissões            |
-| :---------------------- | :--------- | :---------- | :-------------------- |
-| `admin@betalent.tech`   | `password` | **ADMIN**   | Acesso Total          |
-| `manager@betalent.tech` | `password` | **MANAGER** | Usuários e Produtos   |
-| `finance@betalent.tech` | `password` | **FINANCE** | Produtos e Reembolsos |
-| `user@betalent.tech`    | `password` | **USER**    | Compras e Consultas   |
+| Email                  | Password   | Role        | Permissions           |
+| :--------------------- | :--------- | :---------- | :-------------------- |
+| `admin@payments.io`    | `password` | **ADMIN**   | Full Access           |
+| `manager@payments.io`  | `password` | **MANAGER** | Users & Products      |
+| `finance@payments.io`  | `password` | **FINANCE** | Products & Refunds    |
+| `user@payments.io`     | `password` | **USER**    | Purchases & History   |
 
 ---
 
 ## 🛣️ API Endpoints
 
-### 🟢 Rotas Públicas
+### 🟢 Public Routes
 
 - **Login:** `POST /login`
-- **Realizar Compra:** `POST /purchase`
-  - _Payload Exemplo:_
+- **Purchase:** `POST /purchase`
+  - _Example Payload:_
     ```json
     {
-      "client": { "name": "João", "email": "joao@email.com" },
+      "client": { "name": "John Doe", "email": "john@example.com" },
       "payment": { "cardNumber": "5569000000006063", "cvv": "010" },
       "products": [{ "id": 1, "quantity": 2 }]
     }
     ```
 
-### 🔴 Rotas Privadas (`Authorization: Bearer <token>`)
+### 🔴 Private Routes (`Authorization: Bearer <token>`)
 
-- **Transações:**
-  - `GET /transactions` - Listar histórico.
-  - `GET /transactions/:id` - Detalhes da compra.
-  - `POST /transactions/:id/charge_back` - Solicitar reembolso (Admin/Finance).
-- **Gateways:**
-  - `GET /gateways` - Listar gateways ativos e prioridades.
-  - `PUT /gateways/:id` - Ativar/Desativar ou alterar prioridade (Admin).
-- **Clientes:**
-  - `GET /clients` - Listar clientes únicos.
-  - `GET /clients/:id` - Detalhe do cliente e histórico de compras.
-- **CRUDs:**
-  - `/users` (Admin/Manager)
-  - `/products` (Admin/Manager/Finance)
+- **Transactions:** `GET /transactions`, `GET /transactions/:id`, `POST /transactions/:id/charge_back`
+- **Gateways:** `GET /gateways`, `PUT /gateways/:id`
+- **Clients:** `GET /clients`, `GET /clients/:id`
+- **CRUDs:** `/users`, `/products`
 
 ---
 
-## ⚙️ Arquitetura e Padrões de Projeto
-
-- **Strategy Pattern:** As integrações com Gateways são desacopladas através de uma interface comum. Adicionar um novo gateway requer apenas a criação de uma nova classe de estratégia, sem alterar a lógica de `PaymentService`.
-- **Service Layer:** Toda a regra de negócio de orquestração de pagamentos e fallback reside em serviços dedicados, mantendo os controllers limpos.
-- **Fallback Automático:** A lógica de falha foi testada usando os CVVs reservados do mock. Se o Gateway 1 retornar erro (como ocorre com o CVV 100), o sistema tenta o Gateway 2 de forma transparente.
-- **Database Schema:** Estrutura otimizada com tabelas pivot (`transaction_products`) para suporte a múltiplos itens por compra, seguindo rigorosamente as nomenclaturas sugeridas no enunciado.
-
----
-
-Desenvolvido por **Gabriel (Gabaoun) Penha**.
+Developed by [Gabriel Penha (Gabaoun)](https://github.com/Gabaoun).

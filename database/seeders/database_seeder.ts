@@ -7,10 +7,10 @@ export default class extends BaseSeeder {
   async run() {
     // Create Users
     await User.createMany([
-      { email: 'admin@betalent.tech', password: 'password', role: 'ADMIN' },
-      { email: 'manager@betalent.tech', password: 'password', role: 'MANAGER' },
-      { email: 'finance@betalent.tech', password: 'password', role: 'FINANCE' },
-      { email: 'user@betalent.tech', password: 'password', role: 'USER' },
+      { email: 'admin@payments.io', password: 'password', role: 'ADMIN' },
+      { email: 'manager@payments.io', password: 'password', role: 'MANAGER' },
+      { email: 'finance@payments.io', password: 'password', role: 'FINANCE' },
+      { email: 'user@payments.io', password: 'password', role: 'USER' },
     ])
 
     // Create Products

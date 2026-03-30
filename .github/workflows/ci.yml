@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: payment_db
+          MYSQL_USER: user
+          MYSQL_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+      gateways-mock:
+        image: matheusprotzen/gateways-mock
+        ports:
+          - 3001:3001
+          - 3002:3002
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Copy .env
+        run: cp .env.example .env
+
+      - name: Generate App Key
+        run: node ace generate:key
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run Migrations
+        run: node ace migration:run --force
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: user
+          DB_PASSWORD: password
+          DB_DATABASE: payment_db
+
+      - name: Run Tests
+        run: npm test
+        env:
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_USER: user
+          DB_PASSWORD: password
+          DB_DATABASE: payment_db
+          GATEWAY_ONE_URL: http://localhost:3001
+          GATEWAY_TWO_URL: http://localhost:3002

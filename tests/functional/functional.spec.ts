@@ -8,7 +8,7 @@ import Transaction from '#models/transaction'
 test.group('Auth', () => {
   test('login with valid credentials', async ({ client }) => {
     const user = await User.firstOrCreate(
-      { email: 'test@betalent.tech' },
+      { email: 'test@payments.io' },
       { password: 'password', role: 'ADMIN' }
     )
     const response = await client.post('/login').json({
@@ -83,7 +83,7 @@ test.group('Purchase', (group) => {
   test('refund a purchase successfully (Finance role)', async ({ client }) => {
     // 1. Criar um usuário Finance e uma Transação Paga
     const user = await User.firstOrCreate(
-      { email: 'finance@betalent.tech' },
+      { email: 'finance@payments.io' },
       { password: 'password', role: 'FINANCE' }
     )
     const g1 = await Gateway.query().where('name', 'Gateway 1').firstOrFail()
@@ -107,7 +107,7 @@ test.group('Purchase', (group) => {
 test.group('RBAC', () => {
   test('user cannot delete product', async ({ client }) => {
     const user = await User.firstOrCreate(
-      { email: 'user@test.tech' },
+      { email: 'user@test.io' },
       { password: 'password', role: 'USER' }
     )
     const product = await Product.firstOrCreate({ name: 'Secret Product' }, { amount: 9999 })
@@ -119,7 +119,7 @@ test.group('RBAC', () => {
 
   test('admin can delete product', async ({ client }) => {
     const user = await User.firstOrCreate(
-      { email: 'admin@test.tech' },
+      { email: 'admin@test.io' },
       { password: 'password', role: 'ADMIN' }
     )
     const product = await Product.firstOrCreate({ name: 'Old Product' }, { amount: 10 })

@@ -9,7 +9,7 @@ const GatewaysController = () => import('#controllers/gateways_controller')
 const ClientsController = () => import('#controllers/clients_controller')
 
 router.get('/', async () => {
-  return { status: 'ok', message: 'BeTalent API' }
+  return { status: 'ok', message: 'Multi-Gateway Payment API' }
 })
 
 // Public Routes
