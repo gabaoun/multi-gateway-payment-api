@@ -1,112 +1,105 @@
 # Multi-Gateway Payment API
 
-A robust and resilient RESTful API for payment management, featuring multi-gateway support and automatic fallback logic. This project demonstrates high-level software engineering practices using AdonisJS 6.
+This project is a case study focused on developing a RESTful API for payment processing using **AdonisJS 6**. The main objective was to implement a payment orchestration system that handles multiple providers and contingency rules.
 
 ---
 
-## 🚀 Key Features
+## 🎯 Project Objectives
 
-- **Dynamic Purchase Calculation:** Total amounts are calculated on the backend, fetching real-time product prices from the database.
-- **Multi-Gateway Integration:** Seamless integration with multiple payment gateways, each with specific authentication methods (Bearer Token, Custom Headers).
-- **Smart Fallback System:** If the primary gateway fails (e.g., CVV errors, timeout), the system automatically routes the charge to the next available gateway, ensuring a smooth user experience.
-- **Role-Based Access Control (RBAC):** Strict access control for ADMIN, MANAGER, FINANCE, and USER profiles.
-- **TDD (Test-Driven Development):** Comprehensive functional test suite covering success, failure, and fallback flows.
-- **Full Dockerization:** Complete infrastructure via Docker Compose, including MySQL database and gateway mocks.
+As part of my transition to Backend development, this repository documents the implementation of design patterns and integration logic with external services. The main focuses were:
+
+- **Gateway Orchestration:** Implementing logic to switch between different payment providers.
+
+- **Persistence and Integrity:** Ensuring that value calculations and transaction states are validated exclusively on the server.
+
+- **Access Security:** Implementing user-level-based permission control (RBAC).
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technical Stack
 
 - **Framework:** [AdonisJS 6](https://adonisjs.com/) (Node.js)
 - **Language:** TypeScript
 - **Database:** MySQL 8.0 (Lucid ORM)
 - **Validation:** VineJS
-- **Testing:** Japa
+- **Testing:** Japa (Functional Testing)
 - **Infrastructure:** Docker & Docker Compose
 
 ---
 
-## ⚙️ Architecture & Design Patterns
+## 🏗️ Design Patterns & Applied Logic
 
-- **Strategy Pattern:** Gateway integrations are decoupled through a common interface. Adding a new gateway only requires creating a new strategy class, keeping the `PaymentService` clean and maintainable.
-- **Service Layer:** All business logic for payment orchestration and fallback resides in dedicated services, following the Single Responsibility Principle.
-- **Automatic Fallback:** Failure logic is implemented to handle instabilities. If Gateway 1 returns a specific failure (like CVV mismatch in mock), the system transparently attempts Gateway 2.
-- **Database Schema:** Optimized structure with pivot tables (`transaction_products`) for multi-item purchases.
+To ensure code maintainability, I used concepts that I transferred from my experience with C++ to the web ecosystem:
+
+- **Strategy Pattern:** Integrations with gateways were decoupled through a common interface. This allows adding new providers without altering the core logic of the `PaymentService`.
+
+- **Service Layer:** All business rules, including rate calculation and retry logic, are isolated in dedicated services.
+
+- **Fallback System:** Error handling implementation where, if the primary gateway returns a communication failure or specific error (e.g., timeout), the system automatically redirects the request to a secondary provider.
+
+- **Data Modeling:** Normalized database structure, using dynamic tables to support multiple items per transaction.
 
 ---
 
-## 🚀 Getting Started
+## 🚀 How to Run the Study
 
-### 1. Setup
+### 1. Initial Setup
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
+git clone <REPOSITORY_URL>
 cd multi-gateway-payment-api
 cp .env.example .env
+
 ```
 
-### 2. Infrastructure (Docker)
+2. Infrastructure (Docker)
 
-Start the API, MySQL database, and gateway mocks:
+The project includes a complete environment via Docker Compose, launching the API, the MySQL database, and gateway mocks for failure simulation:
 
-```bash
+```Bash
+
 docker compose up -d --build
-```
 
-### 3. Database Preparation
+````
 
-Run migrations and seed initial data:
+3. Migrations and Seeds
 
-```bash
+To populate the database with access profiles and test products:
+
+```Bash
+
 docker exec -it payment_app node ace migration:run --force
 docker exec -it payment_app node ace db:seed
+
 ```
 
----
+🧪 Test Coverage
 
-## 🧪 Testing
+Functional tests were developed to validate the critical payment flow and effectiveness Fallback:
 
-To validate system integrity and fallback logic:
+```Bash
 
-```bash
 docker exec -it payment_app node ace test
 ```
 
----
+👥 Configured Access Profiles
+Email | Password | Profile | Permissions
+admin@payments.io | password | ADMIN | Full system access
+manager@payments.io | password | MANAGER | User and product management
+finance@payments.io | password | FINANCE | Product and refund management
+user@payments.io | password | USER | Purchase processing and history
 
-## 👥 Access Profiles (Seeds)
+🛣️ Main Endpoints
+Business Routes
 
-| Email                  | Password   | Role        | Permissions           |
-| :--------------------- | :--------- | :---------- | :-------------------- |
-| `admin@payments.io`    | `password` | **ADMIN**   | Full Access           |
-| `manager@payments.io`  | `password` | **MANAGER** | Users & Products      |
-| `finance@payments.io`  | `password` | **FINANCE** | Products & Refunds    |
-| `user@payments.io`     | `password` | **USER**    | Purchases & History   |
+POST /login: Authentication and token generation.
 
----
+POST /purchase: Purchase processing (includes automatic fallback logic).
 
-## 🛣️ API Endpoints
+Administrative Routes (Require Auth)
 
-### 🟢 Public Routes
+GET /transactions: Payment listing and auditing.
 
-- **Login:** `POST /login`
-- **Purchase:** `POST /purchase`
-  - _Example Payload:_
-    ```json
-    {
-      "client": { "name": "John Doe", "email": "john@example.com" },
-      "payment": { "cardNumber": "5569000000006063", "cvv": "010" },
-      "products": [{ "id": 1, "quantity": 2 }]
-    }
-    ```
+PUT /gateways/:id: Configuration and switching of active providers. POST /transactions/:id/charge_back: Chargeback processing.
 
-### 🔴 Private Routes (`Authorization: Bearer <token>`)
-
-- **Transactions:** `GET /transactions`, `GET /transactions/:id`, `POST /transactions/:id/charge_back`
-- **Gateways:** `GET /gateways`, `PUT /gateways/:id`
-- **Clients:** `GET /clients`, `GET /clients/:id`
-- **CRUDs:** `/users`, `/products`
-
----
-
-Developed by [Gabriel Penha (Gabaoun)](https://github.com/Gabaoun).
+Developed by Gabriel Penha (Gabaoun) Study project in transition to Backend Software Engineering.
