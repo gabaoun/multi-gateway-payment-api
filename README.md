@@ -60,7 +60,7 @@ The project includes a complete environment via Docker Compose, launching the AP
 
 docker compose up -d --build
 
-````
+```
 
 3. Migrations and Seeds
 
@@ -84,24 +84,24 @@ docker exec -it payment_app node ace test
 
 ## 👥 Configured Access Profiles
 
-| Email | Password | Profile | Permissions |
-| :--- | :--- | :--- | :--- |
-| `admin@payments.io` | `password` | **ADMIN** | Full system access |
-| `manager@payments.io` | `password` | **MANAGER** | User and product management |
-| `finance@payments.io` | `password` | **FINANCE** | Product and refund management |
-| `user@payments.io` | `password` | **USER** | Purchase processing and history |
+| Email                 | Password   | Profile     | Permissions                     |
+| :-------------------- | :--------- | :---------- | :------------------------------ |
+| `admin@payments.io`   | `password` | **ADMIN**   | Full system access              |
+| `manager@payments.io` | `password` | **MANAGER** | User and product management     |
+| `finance@payments.io` | `password` | **FINANCE** | Product and refund management   |
+| `user@payments.io`    | `password` | **USER**    | Purchase processing and history |
 
 🛣️ Main Endpoints
 Business Routes
 
-- ```POST /login: Authentication and token generation.```
+- `POST /login: Authentication and token generation.`
 
-- ```POST /purchase: Purchase processing (includes automatic fallback logic).```
+- `POST /purchase: Purchase processing (includes automatic fallback logic).`
 
 Administrative Routes (Require Auth)
 
-- ```GET /transactions: Payment listing and auditing.```
+- `GET /transactions: Payment listing and auditing.`
 
-- ```PUT /gateways/:id: Configuration and switching of active providers. POST /transactions/:id/charge_back: Chargeback processing.```
+- `PUT /gateways/:id: Configuration and switching of active providers. POST /transactions/:id/charge_back: Chargeback processing.`
 
 Developed by Gabriel Penha (Gabaoun) Study project in transition to Backend Software Engineering.
