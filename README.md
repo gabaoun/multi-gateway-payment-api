@@ -23,7 +23,7 @@ As part of my transition to Backend development, this repository documents the i
 - **Database:** MySQL 8.0 (Lucid ORM)
 - **Validation:** VineJS
 - **Testing:** Japa (Functional Testing)
-- **Infrastructure:** Docker & Docker Compose
+- **Infrastructure:** Docker & Docker Compose 
 
 ---
 
