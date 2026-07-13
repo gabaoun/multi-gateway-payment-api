@@ -1,18 +1,18 @@
 # Multi-Gateway Payment API
 
-This project is a case study focused on developing a RESTful API for payment processing using **AdonisJS 6**. The main objective was to implement a payment orchestration system that handles multiple providers and contingency rules.
+A highly resilient RESTful API for payment processing and gateway orchestration developed with **AdonisJS 6** and **TypeScript**. This service implements dynamic contingency rules, automatic gateway failovers, and robust backend validation.
 
 ---
 
-## 🎯 Project Objectives
+## 🎯 Key Features
 
-As part of my transition to Backend development, this repository documents the implementation of design patterns and integration logic with external services. The main focuses were:
+This microservice implements robust design patterns and secure third-party payment integrations:
 
-- **Gateway Orchestration:** Implementing logic to switch between different payment providers.
+- **Gateway Orchestration:** Real-time routing and fallback execution between multiple payment providers to maximize transaction success rates.
 
-- **Persistence and Integrity:** Ensuring that value calculations and transaction states are validated exclusively on the server.
+- **Data Integrity:** Strict server-side validation of transactional states, dynamic pricing, and checkout payloads.
 
-- **Access Security:** Implementing user-level-based permission control (RBAC).
+- **Security:** Access control powered by standard Role-Based Access Control (RBAC) schemas.
 
 ---
 
@@ -27,21 +27,21 @@ As part of my transition to Backend development, this repository documents the i
 
 ---
 
-## 🏗️ Design Patterns & Applied Logic
+## 🏗️ Design Patterns & Architecture
 
-To ensure code maintainability, I used concepts that I transferred from my experience with C++ to the web ecosystem:
+To ensure code maintainability, clean architecture standards, and performance, the system is structured around well-established backend design patterns:
 
-- **Strategy Pattern:** Integrations with gateways were decoupled through a common interface. This allows adding new providers without altering the core logic of the `PaymentService`.
+- **Strategy Pattern:** Decouples external gateway integrations through a unified provider interface, facilitating seamless onboarding of new payment processors.
 
-- **Service Layer:** All business rules, including rate calculation and retry logic, are isolated in dedicated services.
+- **Service Layer:** Encapsulates business logic, fee calculations, and transaction retries in isolated, testable services.
 
-- **Fallback System:** Error handling implementation where, if the primary gateway returns a communication failure or specific error (e.g., timeout), the system automatically redirects the request to a secondary provider.
+- **Fallback / Failover System:** Handles downstream network timeouts or gateway errors by automatically rerouting transactions to backup providers.
 
-- **Data Modeling:** Normalized database structure, using dynamic tables to support multiple items per transaction.
+- **Data Modeling:** Normalized relational database structure using dynamic transaction mappings to support multi-item cart purchases.
 
 ---
 
-## 🚀 How to Run the Study
+## 🚀 Getting Started
 
 ### 1. Initial Setup
 
@@ -104,4 +104,4 @@ Administrative Routes (Require Auth)
 
 - `PUT /gateways/:id: Configuration and switching of active providers. POST /transactions/:id/charge_back: Chargeback processing.`
 
-Developed by Gabriel Penha (Gabaoun) Study project in transition to Backend Software Engineering.
+Developed by Gabriel Penha. Built as a high-performance payment orchestration microservice.
