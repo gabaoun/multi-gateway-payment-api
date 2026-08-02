@@ -2,8 +2,6 @@ import { test } from '@japa/runner'
 import User from '#models/user'
 import Product from '#models/product'
 import Gateway from '#models/gateway'
-import Client from '#models/client'
-import Transaction from '#models/transaction'
 
 test.group('Auth', () => {
   test('login with valid credentials', async ({ client }) => {
@@ -81,23 +79,29 @@ test.group('Purchase', (group) => {
   })
 
   test('refund a purchase successfully (Finance role)', async ({ client }) => {
-    // 1. Criar um usuário Finance e uma Transação Paga
+    // 1. Criar um usuário Finance e realizar uma compra real (gera externalId válido no gateway mock)
     const user = await User.firstOrCreate(
       { email: 'finance@payments.io' },
       { password: 'password', role: 'FINANCE' }
     )
-    const g1 = await Gateway.query().where('name', 'Gateway 1').firstOrFail()
-    const c1 = await Client.firstOrCreate({ email: 'tester@email.com' }, { name: 'Tester' })
 
-    const transaction = await Transaction.create({
-      clientId: c1.id,
-      gatewayId: g1.id,
-      amount: 1000,
-      status: 'PAID',
-      externalId: 'ext_test_123',
+    const purchaseResponse = await client.post('/purchase').json({
+      client: {
+        name: 'Refund Tester',
+        email: 'refund-tester@email.com',
+      },
+      payment: {
+        cardNumber: '5569000000006063',
+        cvv: '010',
+      },
+      products: [{ id: p1.id, quantity: 1 }],
     })
 
-    const response = await client.post(`/transactions/${transaction.id}/charge_back`).loginAs(user)
+    purchaseResponse.assertStatus(200)
+    const transactionId = purchaseResponse.body().id
+
+    // 2. Estornar a transação recém-criada
+    const response = await client.post(`/transactions/${transactionId}/charge_back`).loginAs(user)
 
     response.assertStatus(200)
     response.assertBodyContains({ message: 'Refund successful' })
