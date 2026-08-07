@@ -1,6 +1,9 @@
 # Multi-Gateway Payment API
 
-Production-grade RESTful payment orchestration engine that routes transactions across multiple payment providers with **automatic failover**, **transactional integrity**, and **role-based access control**. Built with AdonisJS 6 and TypeScript.
+[![CI](https://github.com/gabaoun/multi-gateway-payment-api/actions/workflows/ci.yml/badge.svg)](https://github.com/gabaoun/multi-gateway-payment-api/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+RESTful payment orchestration engine that routes transactions across multiple payment providers with **automatic failover**, **transactional integrity**, and **role-based access control**. Built with AdonisJS 6 and TypeScript as a resilience study, not a production deployment.
 
 The service abstracts external payment gateways behind a unified provider interface, enabling seamless onboarding of new processors, dynamic contingency rules, and consistent auditability of every payment operation.
 
