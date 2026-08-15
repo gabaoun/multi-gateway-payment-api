@@ -26,7 +26,7 @@ router
 // Merchant-scoped API surface - stateless JWT + scope check, no session/role guard
 router
   .group(() => {
-    router.get('/transactions', [TransactionsController, 'index'])
+    router.get('/transactions', [TransactionsController, 'index']).as('merchant.transactions.index')
   })
   .prefix('/merchant')
   .use(middleware.jwtAuth())
