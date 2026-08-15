@@ -18,6 +18,7 @@ The service abstracts external payment gateways behind a unified provider interf
 - **Transaction State Machine:** Every purchase moves through a strict state model (`PENDING → PAID | FAILED`) inside a single database transaction.
 - **Dynamic Pricing:** Cart totals are recomputed server-side from persisted product records — client-submitted totals are never trusted.
 - **RBAC Security Model:** Bearer-token authentication plus role-scoped authorization (ADMIN, MANAGER, FINANCE, USER) across all administrative routes.
+- **Stateless Merchant Auth (OAuth2 client-credentials + JWT):** external/server-to-server consumers exchange a `client_id`/`client_secret` for a scope-claimed JWT (`POST /merchant/token`), separate from the staff session/opaque-token guard - see [Security & Compliance](#security--compliance).
 - **Full Test Environment:** Dockerized mock gateways simulate provider failures for deterministic validation of the fallback logic.
 
 ---
@@ -31,8 +32,8 @@ The service abstracts external payment gateways behind a unified provider interf
 | ORM / Database   | Lucid ORM + MySQL 8.0                        |
 | Validation       | VineJS 4                                     |
 | HTTP Client      | Axios                                        |
-| Authentication   | `@adonisjs/auth` (token + session guards)    |
-| Security         | Shield (HSTS, X-Frame DENY) + CORS           |
+| Authentication   | `@adonisjs/auth` (token + session guards) + custom JWT (merchant API) |
+| Security         | Shield (HSTS, X-Frame DENY) + CORS + rate limiting + scope-based authorization |
 | Testing          | Japa 5 (functional tests via `@japa/api-client`) |
 | Logging          | pino + pino-pretty                          |
 | Infrastructure   | Docker & Docker Compose                      |
@@ -76,11 +77,12 @@ PaymentService
 ```text
 multi-gateway-payment-api/
 ├── app/
-│   ├── controllers/          # HTTP layer (auth, transactions, users, products, gateways, clients)
-│   ├── middleware/           # Auth + RBAC role middleware
+│   ├── controllers/          # HTTP layer (auth, merchant_auth, transactions, users, products, gateways, clients)
+│   ├── middleware/           # Auth + RBAC role middleware, JWT auth, scope check, rate limiter
 │   ├── models/               # Lucid ORM models
 │   ├── services/
 │   │   ├── payment_service.ts        # Orchestration, totals, failover logic
+│   │   ├── jwt_service.ts            # Merchant JWT sign/verify (scoped claims)
 │   │   └── gateways/                 # PaymentGateway contract + adapters
 │   │       ├── payment_gateway.ts    # Provider interface (pay / refund)
 │   │       ├── gateway_one.ts
@@ -154,6 +156,26 @@ Copy `.env.example` to `.env` and adjust the values for your environment.
 | `GATEWAY_TWO_URL`         | `http://gateways-mock:3002`        | Provider #2 base URL                          |
 | `GATEWAY_TWO_TOKEN`       | *(mock)*                           | Provider #2 auth token                        |
 | `GATEWAY_TWO_SECRET`      | *(mock)*                           | Provider #2 auth secret                       |
+| `JWT_SECRET`               | *(required)*                       | Signing secret for merchant JWTs               |
+| `MERCHANT_CLIENT_ID`       | `demo-merchant`                    | Client ID accepted by `POST /merchant/token`   |
+| `MERCHANT_CLIENT_SECRET`   | *(required)*                       | Client secret accepted by `POST /merchant/token`|
+
+---
+
+## Security & Compliance
+
+Two independent authentication boundaries, matched to who's calling:
+
+- **Staff (internal admin panel):** `POST /login` issues an opaque, DB-backed access token (`@adonisjs/auth` `tokensGuard`) tied to a `User` row with a fixed role (ADMIN, MANAGER, FINANCE, USER). Authorization is role-based (`role_middleware.ts`).
+- **Merchants (server-to-server integration):** `POST /merchant/token` implements an OAuth2 **client-credentials grant** - a `client_id`/`client_secret` pair (no user record) exchanged for a short-lived, stateless **JWT** carrying a `scopes` claim (`app/services/jwt_service.ts`). Authorization is scope-based (`scope_middleware.ts`, e.g. `merchant:read`), checked independently of the staff role system - a merchant token can never satisfy a `role_middleware` check and vice versa.
+
+OWASP API Security Top 10 mitigations applied to the merchant surface:
+
+| Risk | Mitigation |
+| :--- | :--- |
+| **API4:2023 Unrestricted Resource Consumption** | `rate_limit_middleware.ts` - fixed-window limiter (10 req/60s on `/merchant/token`) blocks brute-force credential guessing. In-memory by design (see the module's own doc comment on the single-instance limitation). |
+| **API5:2023 Broken Function Level Authorization** | `scope_middleware.ts` denies any request whose JWT `scopes` claim doesn't cover the route's required scope, independent of the token being otherwise valid. |
+| **API2:2023 Broken Authentication** | JWTs are signed (`JWT_SECRET`), issuer-checked, and short-lived (1h `expires_in`); `jwt_auth_middleware.ts` rejects expired or tampered tokens with a 401 before any handler runs. |
 
 ---
 
@@ -165,6 +187,15 @@ Copy `.env.example` to `.env` and adjust the values for your environment.
 | :----- | :--------------------------------- | :------------------------------------------- |
 | `POST` | `/login`                           | Authenticate and issue an access token       |
 | `POST` | `/purchase`                        | Process a purchase (automatic failover logic)|
+| `POST` | `/merchant/token`                  | OAuth2 client-credentials grant → scoped JWT (rate-limited) |
+
+### Merchant Endpoints
+
+Require a Bearer JWT issued by `POST /merchant/token`, checked against the route's required scope (`scope_middleware.ts`) - independent of the staff role system below.
+
+| Method | Route                   | Required scope   | Description          |
+| :----- | :----------------------- | :--------------- | :-------------------- |
+| `GET`  | `/merchant/transactions` | `merchant:read`  | Payment listing (read-only) |
 
 ### Authenticated Endpoints
 

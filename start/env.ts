@@ -42,4 +42,10 @@ export default await Env.create(new URL('../', import.meta.url), {
   GATEWAY_TWO_URL: Env.schema.string({ format: 'url', tld: false }),
   GATEWAY_TWO_TOKEN: Env.schema.secret(),
   GATEWAY_TWO_SECRET: Env.schema.secret(),
+
+  // Merchant JWT auth (OAuth2 client-credentials-style exchange, see
+  // app/services/jwt_service.ts and app/controllers/merchant_auth_controller.ts)
+  JWT_SECRET: Env.schema.secret(),
+  MERCHANT_CLIENT_ID: Env.schema.string(),
+  MERCHANT_CLIENT_SECRET: Env.schema.secret(),
 })

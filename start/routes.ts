@@ -2,6 +2,7 @@ import router from '@adonisjs/core/services/router'
 import { middleware } from '#start/kernel'
 
 const AuthController = () => import('#controllers/auth_controller')
+const MerchantAuthController = () => import('#controllers/merchant_auth_controller')
 const TransactionsController = () => import('#controllers/transactions_controller')
 const UsersController = () => import('#controllers/users_controller')
 const ProductsController = () => import('#controllers/products_controller')
@@ -15,6 +16,21 @@ router.get('/', async () => {
 // Public Routes
 router.post('/login', [AuthController, 'login'])
 router.post('/purchase', [TransactionsController, 'purchase'])
+
+// Merchant JWT auth (OAuth2 client-credentials grant) - rate-limited against
+// brute-force per OWASP API4 (Unrestricted Resource Consumption)
+router
+  .post('/merchant/token', [MerchantAuthController, 'token'])
+  .use(middleware.rateLimit(['10', '60']))
+
+// Merchant-scoped API surface - stateless JWT + scope check, no session/role guard
+router
+  .group(() => {
+    router.get('/transactions', [TransactionsController, 'index'])
+  })
+  .prefix('/merchant')
+  .use(middleware.jwtAuth())
+  .use(middleware.scope(['merchant:read']))
 
 // Private Routes
 router
