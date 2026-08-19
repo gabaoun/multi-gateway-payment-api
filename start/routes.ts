@@ -15,7 +15,13 @@ router.get('/', async () => {
 
 // Public Routes
 router.post('/login', [AuthController, 'login'])
-router.post('/purchase', [TransactionsController, 'purchase'])
+
+// Public checkout endpoint - accepts raw card data, so it's a card-testing
+// (carding) target as well as a normal customer flow. Rate-limited per IP
+// per OWASP API4, same as the merchant token endpoint.
+router
+  .post('/purchase', [TransactionsController, 'purchase'])
+  .use(middleware.rateLimit(['5', '60']))
 
 // Merchant JWT auth (OAuth2 client-credentials grant) - rate-limited against
 // brute-force per OWASP API4 (Unrestricted Resource Consumption)
@@ -68,19 +74,21 @@ router
       .prefix('/gateways')
       .use(middleware.role(['ADMIN']))
 
-    // Clients
+    // Clients - PII (name/email), so scoped like /products rather than
+    // left open to every authenticated role.
     router
       .group(() => {
         router.get('/', [ClientsController, 'index'])
         router.get('/:id', [ClientsController, 'show'])
       })
       .prefix('/clients')
+      .use(middleware.role(['ADMIN', 'MANAGER', 'FINANCE']))
 
-    // Transactions (Purchases)
+    // Transactions (Purchases) - payment data, same scoping as /clients.
     router
       .group(() => {
-        router.get('/', [TransactionsController, 'index'])
-        router.get('/:id', [TransactionsController, 'show'])
+        router.get('/', [TransactionsController, 'index']).use(middleware.role(['ADMIN', 'MANAGER', 'FINANCE']))
+        router.get('/:id', [TransactionsController, 'show']).use(middleware.role(['ADMIN', 'MANAGER', 'FINANCE']))
         router
           .post('/:id/charge_back', [TransactionsController, 'refund'])
           .use(middleware.role(['ADMIN', 'FINANCE']))
